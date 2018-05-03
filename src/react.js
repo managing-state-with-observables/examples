@@ -10,7 +10,7 @@ const observable = new Observable(observer => {
 });
 
 const App = () => observable::track(value => (
-    <span>value</span>
+    <h1>{value}</h1>
 ));
 
 render(<App />, document.querySelector('body'));

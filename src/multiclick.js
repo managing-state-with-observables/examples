@@ -16,30 +16,23 @@ function createState() {
     const requestsObs = new BehaviorSubject([]);
 
     return {
-        sendRequest() {
-            const intervalObs = interval(100).pipe(
-                map(howMuch => ({
-                    howMuch,
-                    isPending: true,
-                }),
-            ));
-
-            const httpRequestObs = from(new Promise(resolve => {
+        async sendRequest() {
+            const promise = new Promise(resolve => {
                 setTimeout(() => resolve(times++), 3000);
-            })).pipe(
-                map(counter => ({
-                    counter,
-                    isPending: false,
-                })),
-            );
+            });
 
-            const obs = intervalObs.pipe(
-                takeUntil(httpRequestObs),
-                
-                merge(httpRequestObs),
-            );
+            const obs = new BehaviorSubject({
+                isPending: true,
+                howMuchObs: interval(100),
+            });
 
             requestsObs.next([...requestsObs.getValue(), obs]);
+
+            const counter = await promise;
+            obs.next({
+                isPending: false,
+                counter,
+            })
         },
         requestsObs,
     }
@@ -51,14 +44,14 @@ const App = (
     <div>
         <button onClick={state.sendRequest}>sendRequest</button>
         <ul>
-            {state.requestsObs::track(requests => requests.map(requestObs => requestObs::track(request => {
+            {state.requestsObs::track(requests => requests.map((requestObs, index) => requestObs::track(request => {
                 if (request.isPending) {
-                    return (
-                        <li>waiting for {request.howMuch / 10}</li>
+                    return (    
+                        <li key={index}>waiting for {request.howMuchObs::track(howMuch => howMuch / 10)}</li>
                     );
                 }
 
-                return <li>finished: {request.counter}</li>
+                return <li key={index}>finished: {request.counter}</li>
             })))}
         </ul>
     </div>

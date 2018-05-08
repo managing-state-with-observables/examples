@@ -1,6 +1,6 @@
 import React from 'react';
 import { Observable, BehaviorSubject, from, interval } from 'rxjs';
-import { map, merge, takeUntil } from 'rxjs/operators';
+import { map, merge, takeUntil, share } from 'rxjs/operators';
 import { render } from 'react-dom';
 import { track } from 'react-track-observable';
 
@@ -21,9 +21,13 @@ function createState() {
                 setTimeout(() => resolve(times++), 3000);
             });
 
+            const howMuchObs = (new BehaviorSubject()).pipe(
+                merge(interval(100).pipe(takeUntil(promise))),
+            )
+
             const obs = new BehaviorSubject({
                 isPending: true,
-                howMuchObs: interval(100),
+                howMuchObs,
             });
 
             requestsObs.next([...requestsObs.getValue(), obs]);

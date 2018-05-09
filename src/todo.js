@@ -1,12 +1,23 @@
 import React from 'react';
 import { render } from 'react-dom';
-import { BehaviorSubject } from "rxjs";
+import { BehaviorSubject, combineLatest } from "rxjs";
 import { track } from 'react-track-observable';
 
 
 function createState() {
     const todosObs = new BehaviorSubject([]);
     const filterObs = new BehaviorSubject('all');
+
+    const filteredTodosObs = combineLatest(todosObs, filterObs, (todos, filterValue) => todos.filter(todo => {
+            if (filterValue === 'all') {
+                return true;
+            }
+
+            const shouldBeChecked = filterValue === 'done';
+
+            // todo: change getValue for subscribe
+            return todo.isDoneObs.getValue() === shouldBeChecked;
+    }));
 
     let lastId = 1;
     function addTodo() {
@@ -42,12 +53,12 @@ const App = ({ state }) =>{
             {filterObs::track(selectedFilter => (
                 <div>
                     {['all', 'done', 'notDone'].map(filter => (
-                        <label>
+                        <label key={filter}>
                             <input
                                 type="radio"
                                 value={filter}
                                 checked={filter === selectedFilter}
-                                onChange={(e) => { console.log(e.currentTarget.value); filterObs.next(filter)}}
+                                onChange={filterObs::handler}
                             />
                             {filter}
                         </label>
@@ -55,29 +66,37 @@ const App = ({ state }) =>{
                 </div>
             ))}
             <ul>
-                {todosObs::track(todos => todos.map(todo => {
-                    const { id, isDoneObs, whatObs } = todo;
+                {todosObs::track(todos => {
+                    if (todos.length === 0) {
+                        return (
+                            <span>No todos added yet</span>
+                        );
+                    }
 
-                    return (
-                        <li key={id}>
-                            {isDoneObs::track(isDone => (
-                                <input
-                                    type="checkbox"
-                                    checked={isDone}
-                                    onChange={isDoneObs::toggle}
-                                />
-                            ))}
-                            {whatObs::track(what => (
-                                <input
-                                    autoFocus
-                                    type="text"
-                                    value={what}
-                                    onChange={whatObs::handler}
-                                />
-                            ))}
-                        </li>
-                    );
-                }))}
+                    return todos.map(todo => {
+                        const { id, isDoneObs, whatObs } = todo;
+
+                        return (
+                            <li key={id}>
+                                {isDoneObs::track(isDone => (
+                                    <input
+                                        type="checkbox"
+                                        checked={isDone}
+                                        onChange={isDoneObs::toggle}
+                                    />
+                                ))}
+                                {whatObs::track(what => (
+                                    <input
+                                        autoFocus
+                                        type="text"
+                                        value={what}
+                                        onChange={whatObs::handler}
+                                    />
+                                ))}
+                            </li>
+                        );
+                    })
+                })}
             </ul>
         </div>
     )

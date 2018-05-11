@@ -2,22 +2,32 @@ import React from 'react';
 import { render } from 'react-dom';
 import { BehaviorSubject, combineLatest } from "rxjs";
 import { track } from 'react-track-observable';
+import { tap, mergeMap, filter, map } from 'rxjs/operators';
 
 
 function createState() {
     const todosObs = new BehaviorSubject([]);
     const filterObs = new BehaviorSubject('all');
 
-    const filteredTodosObs = combineLatest(todosObs, filterObs, (todos, filterValue) => todos.filter(todo => {
-            if (filterValue === 'all') {
-                return true;
-            }
+    const filteredTodosObs = combineLatest(todosObs, filterObs).pipe(
+        mergeMap(([todos, filterValue]) => {
+            return todos.map(todo => {
+                return todo.isDoneObs.pipe(
+                    filter(isDone => {
+                        if (filterValue === 'all') {
+                            return true;
+                        }
 
-            const shouldBeChecked = filterValue === 'done';
+                        return isDone === (filterValue === 'done');
+                    }),
+                );
+            })
+        }),
+    );
 
-            // todo: change getValue for subscribe
-            return todo.isDoneObs.getValue() === shouldBeChecked;
-    }));
+    filteredTodosObs.pipe(
+        tap(value => console.log(value)),
+    ).subscribe(value => {});
 
     let lastId = 1;
     function addTodo() {

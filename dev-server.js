@@ -27,7 +27,10 @@ for (const filename of filenames) {
                 }
             ],
         },
-        plugins: [new HtmlWebpackPlugin()],
+        plugins: [new HtmlWebpackPlugin({
+            title: filename,
+            template: path.join(__dirname, 'template.html'),
+        })],
     })
 
     app.use(`/${filename}`, middleware(compiler));

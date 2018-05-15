@@ -1,6 +1,6 @@
 import React from 'react';
 import { Observable, BehaviorSubject, from, interval } from 'rxjs';
-import { map, merge, takeUntil, share } from 'rxjs/operators';
+import { map, merge, takeUntil, share, concat } from 'rxjs/operators';
 import { render } from 'react-dom';
 import { track } from 'react-track-observable';
 
@@ -12,25 +12,25 @@ function mutate(mutator) {
 }
 
 function createState() {
-    let times = 1;
+    let lastId = 1;
     const requestsObs = new BehaviorSubject([]);
 
     return {
         async sendRequest() {
-            const promise = new Promise(resolve => {
-                setTimeout(() => resolve(times++), 3000);
-            });
+            const id = lastId++;
+            const promise = fetchDataFromBackend();
 
-            const howMuchObs = (new BehaviorSubject()).pipe(
-                merge(interval(100).pipe(takeUntil(promise))),
-            )
+            const howMuchObs = interval(100).pipe(
+                takeUntil(promise),
+                share(),
+            );
 
             const obs = new BehaviorSubject({
                 isPending: true,
                 howMuchObs,
             });
 
-            requestsObs.next([...requestsObs.getValue(), obs]);
+            requestsObs.next([...requestsObs.getValue(), { id, obs }]);
 
             const counter = await promise;
             obs.next({
@@ -45,20 +45,41 @@ function createState() {
 const state = createState();
 
 const App = (
-    <div>
+    <article>
         <button onClick={state.sendRequest}>sendRequest</button>
         <ul>
-            {state.requestsObs::track(requests => requests.map((requestObs, index) => requestObs::track(request => {
-                if (request.isPending) {
-                    return (    
-                        <li key={index}>waiting for {request.howMuchObs::track(howMuch => howMuch / 10)}</li>
-                    );
-                }
+            {state.requestsObs::track(requests => requests.map(({id, obs }) => (
+                <li key={id}>
+                    {obs::track(request => {
+                        if (request.isPending) {
+                            return (
+                                <span>waiting for {request.howMuchObs::track(howMuch => howMuch / 10)}</span>
+                            );
+                        }
 
-                return <li key={index}>finished: {request.counter}</li>
-            })))}
+                        return <span>finished: {request.counter}</span>
+                    })}
+                </li>
+            )))}
+            
         </ul>
-    </div>
+    </article>
 );
 
 render(App, document.querySelector('#app'));
+
+
+const startTime = (new Date().getTime());
+function fetchDataFromBackend() {
+    return new Promise(resolve => {
+        setTimeout(
+            () => {
+                const currentTime = (new Date()).getTime();
+                const elapsed = (currentTime - startTime) / 1000;
+
+                resolve(elapsed);
+            },
+            3000,
+        );
+    })
+}

@@ -6,20 +6,40 @@
     <style>
         html {
             height: 100%;
+            font-size: 36px;
         }
         body {
             margin: 0;
             width: 100%;
             height: 100%;
         }
-        #app {
-            width: 100%;
-            height: 100%;
-            
+        #app, article {
+            min-width: 500px;
+            margin: 1rem;
+
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+        }
+        ul {
+            list-style: none;
+        }
+        ul, li, span, p, input {
+            font-size: 1em;
+        }
+        button {
+            margin: 5px;
+            font-size: 16px;
+            border-radius: 5px;
+            height: 42px;
+            border-color: #2b94e1;
+            background-color: rgba(43,148,225,.05);
+            color: #2b94e1;
+            outline: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: rgba(43,148,225,.2)
         }
     </style>
 </head>

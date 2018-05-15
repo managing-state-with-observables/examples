@@ -14,7 +14,7 @@ const App = () => (
     </div>
 );
 
-render(<App />, document.querySelector('body'));
+render(<App />, document.querySelector('#app'));
 
 
 function toggle() {

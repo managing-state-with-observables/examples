@@ -13,4 +13,4 @@ const App = () => observable::track(value => (
     <h1>{value}</h1>
 ));
 
-render(<App />, document.querySelector('body'));
+render(<App />, document.querySelector('#app'));

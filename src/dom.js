@@ -7,6 +7,6 @@ const observable = new Observable(observer => {
 })
 
 observable.subscribe(next => {
-    const body = document.querySelector('body');
-    body.innerHTML = `<h1>${next}</h1>`;
+    const el = document.querySelector('#app');
+    el.innerHTML = `<h1>${next}</h1>`;
 });

@@ -5,7 +5,7 @@ import { BehaviorSubject } from 'rxjs';
 
 
 const obs = createSearchState();
-render(obs::track(renderValue), document.querySelector('body'));
+render(obs::track(renderValue), document.querySelector('#app'));
 
 
 function createSearchState() {

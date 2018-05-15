@@ -124,7 +124,7 @@ const App = ({ state }) =>{
 }
 
 const state = createState();
-render(<App state={state}/>, document.querySelector('body'));
+render(<App state={state}/>, document.querySelector('#app'));
 
 
 // utility functions

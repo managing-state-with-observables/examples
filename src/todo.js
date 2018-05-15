@@ -8,6 +8,7 @@ import { tap, mergeMap, filter, map, concatAll, switchAll } from 'rxjs/operators
 function createState() {
     const todosObs = new BehaviorSubject([]);
     const filterObs = new BehaviorSubject('all');
+    const todoInputTextObs = new BehaviorSubject('');
 
     const filteredTodosObs = combineLatest(todosObs, filterObs, (todos, filterValue) => {
         const obsByTodo = todos.map(todo => {
@@ -31,17 +32,19 @@ function createState() {
     );
 
     let lastId = 1;
-    function addTodo() {
+    function addTodo(e) {
+        e.preventDefault();
+
+        const text = todoInputTextObs.getValue();
+        todoInputTextObs.next(''); // clear input
+
         const isDoneObs = new BehaviorSubject(false);
-        const whatObs = new BehaviorSubject('');
 
         const todo = {
             id: lastId++,
-            whatObs,
+            text,
             isDoneObs,
-        }
-
-        // todosObs.next([...todosObs.getValue(), todo]);
+        };
 
         todosObs::mutate(todos => {
             todos.push(todo);
@@ -53,15 +56,26 @@ function createState() {
         filterObs,
         todosObs,
         addTodo,
+        todoInputTextObs,
     }
 }
 
 const App = ({ state }) =>{
-    const { todosObs, addTodo, filterObs, filteredTodosObs } = state;
+    const { todosObs, addTodo, filterObs, filteredTodosObs, todoInputTextObs } = state;
 
     return (
         <div>
-            <button onClick={addTodo}>Add todo</button>
+            <form onSubmit={addTodo}>
+                { todoInputTextObs::track(todoInputText => (
+                    <input
+                        autoFocus
+                        type="text"
+                        value={todoInputText}
+                        onChange={todoInputTextObs::handler}
+                    />
+                ))}
+                <button>Add todo</button>
+            </form>
             {filterObs::track(selectedFilter => (
                 <div>
                     {['all', 'done', 'notDone'].map(filter => (
@@ -86,25 +100,20 @@ const App = ({ state }) =>{
                     }
 
                     return todos.map(todo => {
-                        const { id, isDoneObs, whatObs } = todo;
+                        const { id, isDoneObs, text } = todo;
 
                         return (
                             <li key={id}>
-                                {isDoneObs::track(isDone => (
-                                    <input
-                                        type="checkbox"
-                                        checked={isDone}
-                                        onChange={isDoneObs::toggle}
-                                    />
-                                ))}
-                                {whatObs::track(what => (
-                                    <input
-                                        autoFocus
-                                        type="text"
-                                        value={what}
-                                        onChange={whatObs::handler}
-                                    />
-                                ))}
+                                <label>
+                                    {isDoneObs::track(isDone => (
+                                        <input
+                                            type="checkbox"
+                                            checked={isDone}
+                                            onChange={isDoneObs::toggle}
+                                        />
+                                    ))}
+                                    {text}
+                                </label>
                             </li>
                         );
                     })

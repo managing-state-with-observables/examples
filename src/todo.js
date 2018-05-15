@@ -1,33 +1,34 @@
 import React from 'react';
 import { render } from 'react-dom';
-import { BehaviorSubject, combineLatest } from "rxjs";
+import { BehaviorSubject, combineLatest, Subject } from "rxjs";
 import { track } from 'react-track-observable';
-import { tap, mergeMap, filter, map } from 'rxjs/operators';
+import { tap, mergeMap, filter, map, concatAll, switchAll } from 'rxjs/operators';
 
 
 function createState() {
     const todosObs = new BehaviorSubject([]);
     const filterObs = new BehaviorSubject('all');
 
-    const filteredTodosObs = combineLatest(todosObs, filterObs).pipe(
-        mergeMap(([todos, filterValue]) => {
-            return todos.map(todo => {
-                return todo.isDoneObs.pipe(
-                    filter(isDone => {
-                        if (filterValue === 'all') {
-                            return true;
-                        }
+    const filteredTodosObs = combineLatest(todosObs, filterObs, (todos, filterValue) => {
+        const obsByTodo = todos.map(todo => {
+            return todo.isDoneObs.pipe(
+                map(isDone => todo)
+            );
+        });
 
-                        return isDone === (filterValue === 'done');
-                    }),
-                );
-            })
-        }),
+        return combineLatest(...obsByTodo).pipe(
+            map(todos => todos.filter(todo => {
+                if (filterValue === 'all') {
+                    return true;
+                }
+
+                const shouldBeChecked = filterValue === 'done';
+                return todo.isDoneObs.getValue() === shouldBeChecked;
+            })),
+        );
+    }).pipe(
+        switchAll(),
     );
-
-    filteredTodosObs.pipe(
-        tap(value => console.log(value)),
-    ).subscribe(value => {});
 
     let lastId = 1;
     function addTodo() {
@@ -48,6 +49,7 @@ function createState() {
     }
 
     return {
+        filteredTodosObs,
         filterObs,
         todosObs,
         addTodo,
@@ -55,7 +57,7 @@ function createState() {
 }
 
 const App = ({ state }) =>{
-    const { todosObs, addTodo, filterObs } = state;
+    const { todosObs, addTodo, filterObs, filteredTodosObs } = state;
 
     return (
         <div>
@@ -76,7 +78,7 @@ const App = ({ state }) =>{
                 </div>
             ))}
             <ul>
-                {todosObs::track(todos => {
+                {filteredTodosObs::track(todos => {
                     if (todos.length === 0) {
                         return (
                             <span>No todos added yet</span>

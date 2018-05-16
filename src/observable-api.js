@@ -6,7 +6,7 @@ const observable = new Observable(observer => {
     setTimeout(() => observer.next('world'), 1500);
 })
 
+const el = document.querySelector('#app');
 observable.subscribe(next => {
-    const el = document.querySelector('#app');
     el.innerHTML = `<h1>${next}</h1>`;
 });
